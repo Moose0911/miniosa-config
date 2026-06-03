@@ -12,6 +12,21 @@ Una Ender 3 V3 KE de uso **productivo/laboral** (impresión de piezas para seña
 
 ---
 
+## 📊 De fábrica → ahora
+
+| Aspecto | De fábrica (stock) | Actual |
+|---------|--------------------|--------|
+| **Aceleración** | 8.000 mm/s² | **18.000 mm/s²** (+125%) |
+| **Corriente driver Y** | 0.75 A | **0.80 A** |
+| **Masa eje Y** | carro stock | **−400 g** (carro ASA + rieles lineales) |
+| **Firmware / host** | Creality stock (fork Klipper / Nebula) | **Klipper mainline en BTT Pad 7 + stack de mods** |
+| **Auto Z-offset** | strain-gauge stock | **BLTouch (malla) + PRTouch HX711 custom (Z-offset)** |
+| **Nivelación** | auto-level | **trama 0.011 mm + malla 7×7 cacheada** |
+
+> La aceleración pasó por **8k (stock) → 12k (tuning previo, pico 15k) → 18k (actual)**, con **24k en el roadmap** (requiere mod de refrigeración del driver). Detalle más abajo.
+
+---
+
 ## 🔧 Mods físicos (hardware)
 
 | Mod | Detalle |
@@ -59,9 +74,19 @@ Una Ender 3 V3 KE de uso **productivo/laboral** (impresión de piezas para seña
 - **Y:** `mzv @ 32.4 Hz` (resonancia dominada por rigidez de marco/correa, no por masa)
 
 ### Velocidad y aceleración
-- **`max_accel: 18000`** (desde 12k stock) — techo travel **térmicamente sostenible**.
-- Hallazgo clave: el cuello del eje Y **no es el motor, es el driver TMC2208** (calor por **corriente** I²R, no por aceleración). A 0.95A daba OTPW (>120 °C); se bakeó en **0.80A** estable. Para desbloquear 24k → mod de refrigeración del driver (roadmap).
-- Insight: a 0.6mm los prints son **flow-limited** (los limita el MVS del filamento, no las velocidades del slicer).
+
+Evolución de `max_accel`:
+
+| Punto | max_accel | Nota |
+|-------|-----------|------|
+| **Stock (Creality)** | 8.000 mm/s² | spec de fábrica de la KE |
+| **Tuning previo** | 12.000 mm/s² | había llegado a 15k, bajó a 12k por seguridad |
+| **Actual** | **18.000 mm/s²** | horneado, sostenible a 0.80A — **+125% vs stock** |
+| **Roadmap** | 24.000 mm/s² | requiere mod de refrigeración del driver (a 0.95A) |
+
+- **Corriente driver Y**: 0.75 A (stock) → **0.80 A** (actual). Se probó 0.95A pero daba **OTPW** (sobretemperatura >120 °C) en print real.
+- **Hallazgo clave**: el cuello del eje Y **no es el motor, es el driver TMC2208** — el calor es por **corriente** (I²R), no por aceleración.
+- **Insight de velocidad**: la "500 mm/s" de fábrica es teórica — a 0.6mm los prints son **flow-limited** (los limita el MVS del filamento, no las velocidades del slicer). En la práctica imprime ~57-61 mm/s con MMLA 0.6.
 
 ### PRTouch — auto Z-offset por celda de carga (custom)
 Sistema tipo Nebula Pad **portado a Klipper mainline**: módulo `hx711s.py` propio (sin binarios .so), usa la boquilla como sonda vía celda de carga HX711. Mide 2 puntos, promedia, cachea, y aplica el offset como valor **absoluto** (`SET_GCODE_OFFSET Z=`). Integrado en `START_PRINT`. Resuelto el problema de doble-conteo malla+offset vía `zero_reference_position`.
